@@ -3,39 +3,120 @@ import { api } from './apiClient';
 const mockProjects = [
   {
     id: 1,
-    name: 'Online Website',
-    client: 'Instaweb',
+    name: 'Banking Application',
+    client: 'SecureBank Ltd',
     status: 'In Progress',
     ownerId: 1,
-    startDate: '2026-04-09',
-    endDate: '2026-08-20',
-    hours: 120,
-    finalCost: 24000
+    owner: 'Sai',
+    startDate: '2025-02-20',
+    endDate: '2025-05-22',
+    hours: 300,
+    finalCost: 65000
   },
   {
     id: 2,
-    name: 'Medical healthcare',
-    client: 'Care Labs',
+    name: 'Hospital Management System',
+    client: 'MediCare Solutions',
     status: 'Pending',
     ownerId: 2,
-    startDate: '2026-01-09',
-    endDate: '2026-06-10',
-    hours: 96,
-    finalCost: 18500
+    owner: 'Maneesh',
+    startDate: '2025-04-05',
+    endDate: '2025-06-25',
+    hours: 250,
+    finalCost: 50000
+  },
+  {
+    id: 3,
+    name: 'Online Food Delivery App',
+    client: 'FreshBite Technologies',
+    status: 'Completed',
+    ownerId: 3,
+    owner: 'Dakshi',
+    startDate: '2025-07-10',
+    endDate: '2025-09-18',
+    hours: 280,
+    finalCost: 36000
   }
 ];
 
 const mockUsers = [
-  { id: 1, name: 'Maneesh' },
-  { id: 2, name: 'Dakshi' }
+  { id: 1, name: 'Sai' },
+  { id: 2, name: 'Maneesh' },
+  { id: 3, name: 'Dakshi' }
 ];
 
 export const getProjects = ({ signal } = {}) => {
-  if (!import.meta.env.VITE_API_BASE_URL) {
-    return Promise.resolve(mockProjects);
-  }
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      if (signal?.aborted) {
+        reject(
+          new DOMException(
+            'The operation was aborted.',
+            'AbortError'
+          )
+        );
+        return;
+      }
 
-  return api.get('/projects', { signal }).catch(() => mockProjects);
+      resolve(mockProjects);
+    }, 2500);
+
+    if (signal) {
+      signal.addEventListener(
+        'abort',
+        () => {
+          clearTimeout(timer);
+
+          reject(
+            new DOMException(
+              'The operation was aborted.',
+              'AbortError'
+            )
+          );
+        },
+        { once: true }
+      );
+    }
+  });
+};
+
+export const getProject = (id, { signal } = {}) => {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      if (signal?.aborted) {
+        reject(
+          new DOMException(
+            'The operation was aborted.',
+            'AbortError'
+          )
+        );
+        return;
+      }
+
+      const project = mockProjects.find(
+        (item) => String(item.id) === String(id)
+      );
+
+      resolve(project || null);
+    }, 500);
+
+    if (signal) {
+      signal.addEventListener(
+        'abort',
+        () => {
+          clearTimeout(timer);
+
+          reject(
+            new DOMException(
+              'The operation was aborted.',
+              'AbortError'
+            )
+          );
+        },
+        { once: true }
+      );
+    }
+  });
 };
 
 export const getUsers = ({ signal } = {}) => {

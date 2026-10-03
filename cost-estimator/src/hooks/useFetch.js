@@ -1,64 +1,63 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-const MIN_LOADING_MS = 1000;
-const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-;
 
-
-export function useFetch(fetcher) {
+export function useFetch(fetcher, deps = []) {
   const [data, setData] = useState(null);
   const [isLoading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   const fetcherRef = useRef(fetcher);
   const controllerRef = useRef(null);
+  const [reloadToken, setReloadToken] = useState(0);
 
   useEffect(() => {
     fetcherRef.current = fetcher;
-  });
+  }, [fetcher]);
 
-  const run = useCallback(async () => {
-    controllerRef.current?.abort();
+  const refetch = useCallback(() => {
+    setReloadToken((value) => value + 1);
+  }, []);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
     const controller = new AbortController();
     controllerRef.current = controller;
 
-    try {
-    //   const result = await fetcherRef.current({ signal: controller.signal });
-    
-    const [result] = await Promise.all([
-      fetcherRef.current({ signal: controller.signal }),
-      delay(MIN_LOADING_MS)
-    ])
-   
+    let isCancelled = false;
 
-      if (controller.signal.aborted) return;
+    const run = async () => {
+      setLoading(true);
+      setError(null);
 
-      setData(result);
-    } catch (err) {
-      if (controller.signal.aborted) return;
+      try {
+        const result = await fetcherRef.current({
+          signal: controller.signal
+        });
 
-      setError(err);
-    } finally {
-      if (!controller.signal.aborted) {
-        setLoading(false);
+        if (controller.signal.aborted || isCancelled) {
+          return;
+        }
+
+        setData(result);
+      } catch (err) {
+        if (controller.signal.aborted || isCancelled) {
+          return;
+        }
+
+        setError(err);
+      } finally {
+        if (!controller.signal.aborted && !isCancelled) {
+          setLoading(false);
+        }
       }
-    }
-  }, []);
+    };
 
-  const refetch = useCallback(() => {
-    setError(null);
-    setLoading(true);
-
-    return run();
-  }, [run]);
-
-  useEffect(() => {
-    run();
+    void run();
 
     return () => {
-      controllerRef.current?.abort();
+      isCancelled = true;
+      controller.abort();
     };
-  }, [run]);
+  }, [reloadToken, ...deps]);
 
   return {
     data,
